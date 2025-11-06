@@ -19,7 +19,7 @@ func main() {
 	connStr := "amqp://guest:guest@localhost:5672/"
 	conn, err := amqp.Dial(connStr)
 	if err != nil {
-		log.Fatalf("couldn't connect to RabbitMQ: %v", err)
+		log.Fatalf("server couldn't connect to RabbitMQ: %v", err)
 	}
 	defer conn.Close()
 	fmt.Println("Peril game server connected to RabbitMQ")
@@ -37,5 +37,5 @@ func main() {
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
 	<-signalChan
-	fmt.Println("RabbitMQ connection closed")
+	fmt.Println("RabbitMQ server connection closed")
 }

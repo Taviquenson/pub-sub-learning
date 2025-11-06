@@ -1,7 +1,45 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"log"
+	"os"
+	"os/signal"
+
+	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/taviquenson/pub-sub-learning/internal/gamelogic"
+	"github.com/taviquenson/pub-sub-learning/internal/pubsub"
+	"github.com/taviquenson/pub-sub-learning/internal/routing"
+)
 
 func main() {
 	fmt.Println("Starting Peril client...")
+
+	// this is how app knows where to connect to the RabbitMQ server
+	connStr := "amqp://guest:guest@localhost:5672/"
+	conn, err := amqp.Dial(connStr)
+	if err != nil {
+		log.Fatalf("client couldn't connect to RabbitMQ: %v", err)
+	}
+	defer conn.Close()
+	fmt.Println("Peril game client connected to RabbitMQ")
+
+	// Prompt user for their username
+	username, err := gamelogic.ClientWelcome()
+	if err != nil {
+		log.Fatalf("couldn't create username: %v", err)
+	}
+
+	// Declare and bind a channel for the username on the exchange peril_direct
+	_, _, err = pubsub.DeclareAndBind(conn, routing.ExchangePerilDirect, routing.PauseKey+"."+username, routing.PauseKey, pubsub.Transient)
+	if err != nil {
+		log.Fatalf("client couldn't declare and bind a RabbitMQ channel: %v", err)
+	}
+
+	// wait for ctrl+c
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, os.Interrupt)
+	<-signalChan
+	fmt.Println("RabbitMQ client connection closed")
+
 }
