@@ -4,9 +4,6 @@ import (
 	"fmt"
 	"log"
 
-	// "os"
-	// "os/signal"
-
 	"github.com/taviquenson/pub-sub-learning/internal/gamelogic"
 	"github.com/taviquenson/pub-sub-learning/internal/pubsub"
 	"github.com/taviquenson/pub-sub-learning/internal/routing"
@@ -53,6 +50,8 @@ func main() {
 		case "quit":
 			fmt.Println("Peril server is exiting")
 			return
+		case "help":
+			gamelogic.PrintServerHelp()
 		default:
 			fmt.Println("Unknown command")
 		}

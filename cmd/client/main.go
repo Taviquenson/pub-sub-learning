@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
-	"os/signal"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/taviquenson/pub-sub-learning/internal/gamelogic"
@@ -36,10 +34,43 @@ func main() {
 		log.Fatalf("client couldn't declare and bind a RabbitMQ channel: %v", err)
 	}
 
+	gs := gamelogic.NewGameState(username)
+
+	for {
+		words := gamelogic.GetInput()
+		if len(words) == 0 {
+			continue
+		}
+		switch words[0] {
+		case "spawn":
+			err = gs.CommandSpawn(words)
+			if err != nil {
+				fmt.Println(err.Error())
+			}
+		case "move":
+			_, err := gs.CommandMove(words)
+			if err != nil {
+				fmt.Println(err.Error())
+			}
+			fmt.Printf("Successfully moved player %s's units", username)
+		case "status":
+			gs.CommandStatus()
+		case "help":
+			gamelogic.PrintClientHelp()
+		case "spam":
+			fmt.Println("Spamming not allowed yet!")
+		case "quit":
+			gamelogic.PrintQuit()
+			return
+		default:
+			fmt.Println("Unknown command")
+		}
+	}
+
 	// wait for ctrl+c
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, os.Interrupt)
-	<-signalChan
-	fmt.Println("RabbitMQ client connection closed")
+	// signalChan := make(chan os.Signal, 1)
+	// signal.Notify(signalChan, os.Interrupt)
+	// <-signalChan
+	// fmt.Println("RabbitMQ client connection closed")
 
 }
