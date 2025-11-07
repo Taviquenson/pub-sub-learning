@@ -29,14 +29,15 @@ func main() {
 	}
 
 	// Declare and bind a channel for the username on the exchange peril_direct
-	_, _, err = pubsub.DeclareAndBind(conn, routing.ExchangePerilDirect, routing.PauseKey+"."+username, routing.PauseKey, pubsub.Transient)
+	_, queue, err := pubsub.DeclareAndBind(conn, routing.ExchangePerilDirect, routing.PauseKey+"."+username, routing.PauseKey, pubsub.Transient)
 	if err != nil {
-		log.Fatalf("client couldn't declare and bind a RabbitMQ channel: %v", err)
+		log.Fatalf("could not subscribe to pause: %v", err)
 	}
+	fmt.Printf("Queue %v declared and bound!\n", queue.Name)
 
 	gs := gamelogic.NewGameState(username)
 
-	for {
+	for { // REPL for the client
 		words := gamelogic.GetInput()
 		if len(words) == 0 {
 			continue
@@ -45,19 +46,21 @@ func main() {
 		case "spawn":
 			err = gs.CommandSpawn(words)
 			if err != nil {
-				fmt.Println(err.Error())
+				fmt.Println(err)
 			}
 		case "move":
 			_, err := gs.CommandMove(words)
 			if err != nil {
-				fmt.Println(err.Error())
+				fmt.Println(err)
 			}
-			fmt.Printf("Successfully moved player %s's units", username)
+
+			// TODO: publish the move
 		case "status":
 			gs.CommandStatus()
 		case "help":
 			gamelogic.PrintClientHelp()
 		case "spam":
+			// TODO: publish n malicious logs
 			fmt.Println("Spamming not allowed yet!")
 		case "quit":
 			gamelogic.PrintQuit()
@@ -66,11 +69,5 @@ func main() {
 			fmt.Println("Unknown command")
 		}
 	}
-
-	// wait for ctrl+c
-	// signalChan := make(chan os.Signal, 1)
-	// signal.Notify(signalChan, os.Interrupt)
-	// <-signalChan
-	// fmt.Println("RabbitMQ client connection closed")
 
 }

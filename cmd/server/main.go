@@ -27,6 +27,12 @@ func main() {
 		log.Fatalf("couldn't create RabbitMQ channel: %v", err)
 	}
 
+	_, queue, err := pubsub.DeclareAndBind(conn, routing.ExchangePerilTopic, routing.GameLogSlug, routing.GameLogSlug+".*", pubsub.Durable)
+	if err != nil {
+		log.Fatalf("could not subscribe to pause: %v", err)
+	}
+	fmt.Printf("Queue %v declared and bound!\n", queue.Name)
+
 	gamelogic.PrintServerHelp()
 
 	for {
@@ -37,13 +43,13 @@ func main() {
 		switch words[0] { // Publish messages to the exchange based on user input
 		case "pause":
 			fmt.Println("Publishing Paused game state")
-			err = pubsub.PublishJSON(ch, routing.ExchangePerilDirect, routing.PauseKey, routing.PlayingState{IsPaused: true})
+			err = pubsub.PublishJSON(ch, routing.ExchangePerilTopic, routing.PauseKey, routing.PlayingState{IsPaused: true})
 			if err != nil {
 				log.Printf("could not publish time: %v", err)
 			}
 		case "resume":
 			fmt.Println("Sending a Resume message")
-			err = pubsub.PublishJSON(ch, routing.ExchangePerilDirect, routing.PauseKey, routing.PlayingState{IsPaused: false})
+			err = pubsub.PublishJSON(ch, routing.ExchangePerilTopic, routing.PauseKey, routing.PlayingState{IsPaused: false})
 			if err != nil {
 				log.Printf("could not publish time: %v", err)
 			}
