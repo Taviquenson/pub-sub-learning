@@ -28,27 +28,32 @@ func SubscribeJSON[T any](
 	// if it isn't, this will create said queue
 	channel, queue, err := DeclareAndBind(conn, exchange, queueName, key, queueType)
 	if err != nil {
-		return fmt.Errorf("error in SubscribeJSON(): %v", err)
+		return fmt.Errorf("could not declare and bind queue: %v", err)
 	}
 
 	// Getting a new chan of amqp.Delivery structs (queued messages)
 	// Using an empty string for the consumer name so that it will be auto-generated
 	msgsCh, err := channel.Consume(queue.Name, "", false, false, false, false, nil)
 	if err != nil {
-		return fmt.Errorf("error trying to consume messages: %v", err)
+		return fmt.Errorf("could not consume messages: %v", err)
+	}
+
+	unmarshaller := func(data []byte) (T, error) {
+		var target T // a Go structure for data from JSON in queue msgs
+		err := json.Unmarshal(data, &target)
+		return target, err
 	}
 
 	go func() {
+		defer channel.Close()
 		for msg := range msgsCh {
-			var dataStruc T // a Go structure for data from JSON in queue msgs
-			if err = json.Unmarshal(msg.Body, &dataStruc); err != nil {
-				fmt.Printf("error unmarshalling JSON: %v", err)
-			}
-			handler(dataStruc)
-			msg.Ack(false) // Acknowledge the message to remove it from the queue
+			target, err := unmarshaller(msg.Body)
 			if err != nil {
-				fmt.Printf("error: the acknowledge could not be delivered to the channel it was sent from")
+				fmt.Printf("could not unmarshal message: %v\n", err)
+				continue
 			}
+			handler(target)
+			msg.Ack(false) // Acknowledge the message to remove it from the queue
 		}
 	}()
 

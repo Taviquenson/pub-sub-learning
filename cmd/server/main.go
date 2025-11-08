@@ -44,13 +44,13 @@ func main() {
 		switch words[0] { // Publish messages to the exchange based on user input
 		case "pause":
 			fmt.Println("Publishing Paused game state")
-			err = pubsub.PublishJSON(ch, routing.ExchangePerilTopic, routing.PauseKey, routing.PlayingState{IsPaused: true})
+			err = pubsub.PublishJSON(ch, string(routing.ExchangePerilDirect), routing.PauseKey, routing.PlayingState{IsPaused: true})
 			if err != nil {
 				log.Printf("could not publish time: %v", err)
 			}
 		case "resume":
 			fmt.Println("Sending a Resume message")
-			err = pubsub.PublishJSON(ch, routing.ExchangePerilTopic, routing.PauseKey, routing.PlayingState{IsPaused: false})
+			err = pubsub.PublishJSON(ch, string(routing.ExchangePerilDirect), routing.PauseKey, routing.PlayingState{IsPaused: false})
 			if err != nil {
 				log.Printf("could not publish time: %v", err)
 			}

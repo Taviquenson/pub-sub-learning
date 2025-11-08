@@ -25,21 +25,14 @@ func main() {
 	// Prompt user for their username
 	username, err := gamelogic.ClientWelcome()
 	if err != nil {
-		log.Fatalf("couldn't create username: %v", err)
+		log.Fatalf("couldn't get username: %v", err)
 	}
 
-	// Declare and bind a channel for the username on the exchange peril_direct
-	_, queue, err := pubsub.DeclareAndBind(conn, routing.ExchangePerilDirect, routing.PauseKey+"."+username, routing.PauseKey, pubsub.SimpleQueueTransient)
+	gs := gamelogic.NewGameState(username)
+	err = pubsub.SubscribeJSON(conn, routing.ExchangePerilDirect, routing.PauseKey+"."+gs.GetUsername(), routing.PauseKey, pubsub.SimpleQueueTransient, handlerPause(gs))
 	if err != nil {
 		log.Fatalf("could not subscribe to pause: %v", err)
 	}
-	fmt.Printf("Queue %v declared and bound!\n", queue.Name)
-
-	gs := gamelogic.NewGameState(username)
-	// err = pubsub.SubscribeJSON()
-	// if err != nil {
-
-	// }
 
 	for { // REPL for the client
 		words := gamelogic.GetInput()
@@ -74,14 +67,4 @@ func main() {
 		}
 	}
 
-}
-
-func handlerPause(gs *gamelogic.GameState) func(routing.PlayingState) {
-	// Handler function that accepts a routing.PlayingState struct.
-	// The handler we pass into SubscribeJSON that will be called each time a new message is consumed
-	return func(ps routing.PlayingState) {
-		defer fmt.Print("> ")
-		// pause the game for the client
-		gs.HandlePause(ps)
-	}
 }
