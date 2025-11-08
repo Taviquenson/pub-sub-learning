@@ -29,7 +29,7 @@ func main() {
 	}
 
 	// Declare and bind a channel for the username on the exchange peril_direct
-	_, queue, err := pubsub.DeclareAndBind(conn, routing.ExchangePerilDirect, routing.PauseKey+"."+username, routing.PauseKey, pubsub.Transient)
+	_, queue, err := pubsub.DeclareAndBind(conn, routing.ExchangePerilDirect, routing.PauseKey+"."+username, routing.PauseKey, pubsub.SimpleQueueTransient)
 	if err != nil {
 		log.Fatalf("could not subscribe to pause: %v", err)
 	}

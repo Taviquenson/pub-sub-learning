@@ -27,7 +27,8 @@ func main() {
 		log.Fatalf("couldn't create RabbitMQ channel: %v", err)
 	}
 
-	_, queue, err := pubsub.DeclareAndBind(conn, routing.ExchangePerilTopic, routing.GameLogSlug, routing.GameLogSlug+".*", pubsub.Durable)
+	// Declare and bind a durable channel for the game's logs on the exchange peril_topic
+	_, queue, err := pubsub.DeclareAndBind(conn, routing.ExchangePerilTopic, routing.GameLogSlug, routing.GameLogSlug+".*", pubsub.SimpleQueueDurable)
 	if err != nil {
 		log.Fatalf("could not subscribe to pause: %v", err)
 	}
