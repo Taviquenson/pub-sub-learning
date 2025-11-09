@@ -7,7 +7,13 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-// type Acktype int
+type Acktype int
+
+const (
+	Ack Acktype = iota
+	NackRequeue
+	NackDiscard
+)
 
 type SimpleQueueType int
 
@@ -22,7 +28,7 @@ func SubscribeJSON[T any](
 	queueName,
 	key string,
 	queueType SimpleQueueType, // an enum to represent "durable" or "transient"
-	handler func(T),
+	handler func(T) Acktype,
 ) error {
 	// Make sure that the given queue exists and is bound to the exchange,
 	// if it isn't, this will create said queue
@@ -52,8 +58,20 @@ func SubscribeJSON[T any](
 				fmt.Printf("could not unmarshal message: %v\n", err)
 				continue
 			}
-			handler(target)
-			msg.Ack(false) // Acknowledge the message to remove it from the queue
+			acktype := handler(target)
+			switch acktype {
+			case Ack:
+				msg.Ack(false) // Acknowledge the message to remove it from the queue
+				fmt.Println("Queue message acknowledged successfully")
+			case NackRequeue:
+				msg.Nack(false, true)
+				fmt.Println("Queue message NOT acknowledged and requeued")
+			case NackDiscard:
+				msg.Nack(false, false)
+				fmt.Println("Queue message NOT acknowledged and discarded to the dead-letter queue")
+			default:
+				fmt.Printf("Unrecognized acktype: %v\n", acktype)
+			}
 		}
 	}()
 
