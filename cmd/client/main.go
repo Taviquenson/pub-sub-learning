@@ -42,9 +42,15 @@ func main() {
 	}
 
 	// subscribe to moves from other players
-	err = pubsub.SubscribeJSON(conn, routing.ExchangePerilTopic, routing.ArmyMovesPrefix+"."+gs.GetUsername(), routing.ArmyMovesPrefix+".*", pubsub.SimpleQueueTransient, handlerMove(gs))
+	err = pubsub.SubscribeJSON(conn, routing.ExchangePerilTopic, routing.ArmyMovesPrefix+"."+gs.GetUsername(), routing.ArmyMovesPrefix+".*", pubsub.SimpleQueueTransient, handlerMove(gs, publishCh))
 	if err != nil {
 		log.Fatalf("could not subscribe to army moves: %v", err)
+	}
+
+	// subscribe to wars (all clients will share this queue)
+	err = pubsub.SubscribeJSON(conn, routing.ExchangePerilTopic, routing.WarRecognitionsPrefix, routing.WarRecognitionsPrefix+".*", pubsub.SimpleQueueDurable, handlerWar(gs))
+	if err != nil {
+		log.Fatalf("could not subscribe to war recognitions: %v", err)
 	}
 
 	for { // REPL for the client
