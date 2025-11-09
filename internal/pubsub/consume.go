@@ -58,19 +58,16 @@ func SubscribeJSON[T any](
 				fmt.Printf("could not unmarshal message: %v\n", err)
 				continue
 			}
-			acktype := handler(target)
-			switch acktype {
+			switch handler(target) {
 			case Ack:
 				msg.Ack(false) // Acknowledge the message to remove it from the queue
-				fmt.Println("Queue message acknowledged successfully")
-			case NackRequeue:
-				msg.Nack(false, true)
-				fmt.Println("Queue message NOT acknowledged and requeued")
+				fmt.Println("Ack")
 			case NackDiscard:
 				msg.Nack(false, false)
-				fmt.Println("Queue message NOT acknowledged and discarded to the dead-letter queue")
-			default:
-				fmt.Printf("Unrecognized acktype: %v\n", acktype)
+				fmt.Println("NackDiscard")
+			case NackRequeue:
+				msg.Nack(false, true)
+				fmt.Println("NackRequeue")
 			}
 		}
 	}()
@@ -96,7 +93,9 @@ func DeclareAndBind(
 		queueType != SimpleQueueDurable, // delete when unused
 		queueType != SimpleQueueDurable, // exclusive
 		false,                           // no-wait
-		nil,                             // args
+		amqp.Table{
+			"x-dead-letter-exchange": "peril_dlx",
+		}, // args
 	)
 	if err != nil {
 		return nil, amqp.Queue{}, fmt.Errorf("could not declare queue: %v", err)
