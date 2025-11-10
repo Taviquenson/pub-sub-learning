@@ -42,25 +42,50 @@ func handlerMove(gs *gamelogic.GameState, ch *amqp.Channel) func(gamelogic.ArmyM
 	}
 }
 
-func handlerWar(gs *gamelogic.GameState) func(gamelogic.RecognitionOfWar) pubsub.Acktype {
+func handlerWar(gs *gamelogic.GameState, publishCh *amqp.Channel) func(gamelogic.RecognitionOfWar) pubsub.Acktype {
 	// The handler we pass into SubscribeJSON that will be called each time a new message is consumed
 	return func(rw gamelogic.RecognitionOfWar) pubsub.Acktype {
 		defer fmt.Print("> ")
-		warOutcome, _, _ := gs.HandleWar(rw)
+		warOutcome, winner, loser := gs.HandleWar(rw)
 		switch warOutcome {
 		case gamelogic.WarOutcomeNotInvolved: // client had no units there, thus requeue
 			return pubsub.NackRequeue // so that another client can pick it up and try to process it
 		case gamelogic.WarOutcomeNoUnits:
 			return pubsub.NackDiscard
 		case gamelogic.WarOutcomeOpponentWon:
+			logMessage := fmt.Sprintf("%s won a war against %s", winner, loser)
+			err := publishWarLog(rw, publishCh, logMessage)
+			if err != nil {
+				fmt.Println("the publishing of the war declaration failed, requeue-ing the message")
+				return pubsub.NackRequeue
+			}
 			return pubsub.Ack
 		case gamelogic.WarOutcomeYouWon:
+			logMessage := fmt.Sprintf("%s won a war against %s", winner, loser)
+			err := publishWarLog(rw, publishCh, logMessage)
+			if err != nil {
+				fmt.Println("the publishing of the war declaration failed, requeue-ing the message")
+				return pubsub.NackRequeue
+			}
 			return pubsub.Ack
 		case gamelogic.WarOutcomeDraw:
+			logMessage := fmt.Sprintf("A war between %s and %s resulted in a draw", winner, loser)
+			err := publishWarLog(rw, publishCh, logMessage)
+			if err != nil {
+				fmt.Println("the publishing of the war declaration failed, requeue-ing the message")
+				return pubsub.NackRequeue
+			}
 			return pubsub.Ack
-
 		}
 		fmt.Println("error: unknown war outcome")
 		return pubsub.NackDiscard
 	}
+}
+
+func publishWarLog[T any](rw gamelogic.RecognitionOfWar, publishCh *amqp.Channel, logVal T) error {
+	err := pubsub.PublishGob(publishCh, routing.ExchangePerilTopic, routing.GameLogSlug+"."+rw.Attacker.Username, logVal)
+	if err != nil {
+		return err
+	}
+	return nil
 }

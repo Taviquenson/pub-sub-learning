@@ -48,7 +48,7 @@ func main() {
 	}
 
 	// subscribe to wars (all clients will share this queue)
-	err = pubsub.SubscribeJSON(conn, routing.ExchangePerilTopic, routing.WarRecognitionsPrefix, routing.WarRecognitionsPrefix+".*", pubsub.SimpleQueueDurable, handlerWar(gs))
+	err = pubsub.SubscribeJSON(conn, routing.ExchangePerilTopic, routing.WarRecognitionsPrefix, routing.WarRecognitionsPrefix+".*", pubsub.SimpleQueueDurable, handlerWar(gs, publishCh))
 	if err != nil {
 		log.Fatalf("could not subscribe to war recognitions: %v", err)
 	}

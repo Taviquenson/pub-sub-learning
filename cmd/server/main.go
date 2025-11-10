@@ -30,7 +30,7 @@ func main() {
 	// Declare and bind a durable channel for the game's logs on the exchange peril_topic
 	_, queue, err := pubsub.DeclareAndBind(conn, routing.ExchangePerilTopic, routing.GameLogSlug, routing.GameLogSlug+".*", pubsub.SimpleQueueDurable)
 	if err != nil {
-		log.Fatalf("could not subscribe to pause: %v", err)
+		log.Fatalf("could not declare and bound games log queue: %v", err)
 	}
 	fmt.Printf("Queue %v declared and bound!\n", queue.Name)
 
