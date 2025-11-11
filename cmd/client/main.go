@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -82,8 +83,19 @@ func main() {
 		case "help":
 			gamelogic.PrintClientHelp()
 		case "spam":
-			// TODO: publish n malicious logs
-			fmt.Println("Spamming not allowed yet!")
+			if len(words) < 2 {
+				fmt.Println("Please provide an int as the second word in the command.\ni.e. spam 100")
+				continue
+			}
+			n, err := strconv.Atoi(words[1])
+			if err != nil {
+				fmt.Printf("Couldn't convert '%s' into an integer, error: %v\n", words[1], err)
+				continue
+			}
+			for i := 0; i < n; i++ {
+				spamMsg := gamelogic.GetMaliciousLog()
+				publishGameLog(publishCh, username, spamMsg)
+			}
 		case "quit":
 			gamelogic.PrintQuit()
 			return

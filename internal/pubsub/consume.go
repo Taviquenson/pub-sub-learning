@@ -129,6 +129,10 @@ func SubscribeGob[T any](
 		return fmt.Errorf("could not declare and bind queue: %v", err)
 	}
 
+	// Set prefetch limit of the channel to 10 messages so one consumer doesn't
+	// cache all the messages locally before the other consumers can get them
+	channel.Qos(10, 0, false)
+
 	msgsCh, err := channel.Consume(queue.Name, "", false, false, false, false, nil)
 	if err != nil {
 		return fmt.Errorf("could not consume messages: %v", err)
